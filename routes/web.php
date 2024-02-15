@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DashboardController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -14,5 +16,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('courses.index');
 });
+
+Route::get('/courses', [DashboardController::class, 'index'])->name('courses.index');
+Route::get('/courses/datatable', [DashboardController::class, 'getCoursesDataTable'])->name('courses.datatable');
+

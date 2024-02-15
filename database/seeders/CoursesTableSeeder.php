@@ -31,12 +31,17 @@ class CoursesTableSeeder extends Seeder
 
         $topics = Topic::factory(5)->create();
 
+
+        $courses = Course::factory(20)->create();
+
         $courses = Course::factory(20)->create([
             'topic_id' => $topics->random()->id,
         ]);
         $speakers = Speaker::factory(10)->create();
 
         foreach ($courses as $course) {
+            $randomTopicId = $topics->random()->id;
+            $course->update(['topic_id' => $randomTopicId]);
             $randomSpeakers = $speakers->random(rand(1, 5));
             $course->speakers()->attach($randomSpeakers);
         }

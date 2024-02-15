@@ -1,48 +1,141 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
-        <title>Laravel</title>
-
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
-
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    </head>
-    <body class="antialiased">
-
-        <div class="conatiner p-4">
-            <div class="row">
-                
-                <div class="col-2">
-                    
-                </div>
-
-                <div class="col-8">
-                    <div class="card">
-                        <h5 class="card-header">Featured</h5>
-                        <div class="card-body">
-                          <h5 class="card-title">Special title treatment</h5>
-                          <p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-                          <a href="#" class="btn btn-primary">Go somewhere</a>
+@extends('layouts')
+@section('content')
+    <div class="conatiner p-4">
+        <div class="row p-4">
+            
+            <div class="col-4">
+                <div class="accordion accordion-flush" id="accordionFlushExample">
+                    <form id="filter_apply">
+                        <div class="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingOne">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                                Topic
+                            </button>
+                        </h2>
+                        <div id="flush-collapseOne" class="accordion-collapse collapse" aria-labelledby="flush-headingOne" data-bs-parent="#accordionFlushExample">
+                            <div class="accordion-body">
+                                @foreach ($topics as $topic)
+                                    <div>
+                                        <label for="{{$topic->name}}"><input type="checkbox" class="topic-checkbox" id="{{$topic->name}}" name="{{$topic->name}}" value="{{ $topic->name }}"> {{ucfirst($topic->name)}}</label>
+                                    </div>   
+                                @endforeach
+                            </div>
                         </div>
-                      </div>
-                </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="flush-headingTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwo" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                    Price
+                                </button>
+                            </h2>
+                            <div id="flush-collapseTwo" class="accordion-collapse collapse" aria-labelledby="flush-headingTwo" data-bs-parent="#accordionFlushExample">
+                                <div class="accordion-body">
+                                    @php
+                                        $prices = [50, 100, 150, 200, 250, 300, 210, 240];
+                                    @endphp
 
-                <div class="col-2">
+                                    <div class="form-group">
+                                        <label for="minPrice">Min Price:</label>
+                                        <input class="form-control" type="number" name="min_price" id="minPrice" value="">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="maxPrice">Max Price:</label>
+                                        <input class="form-control" type="number" name="max_price" id="maxPrice" value="">
+                                    </div>
+
+                                    @foreach ($prices as $price)
+                                        <div>
+                                            <label for="price_{{ $price }}">
+                                                <input type="checkbox" name="price_range[]" value="{{ $price }}" id="price_{{ $price }}">
+                                                {{ $price }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" id="apply_filter_btn" class="btn btn-primary mt-4" >Apply Filter</button>
+                    </form>
                 </div>
             </div>
+
+            <div class="col-8">
+                <div class="float-end w-50 d-flex">
+                    <label class="w-100" for="orderBy">Order By:</label>
+                    <select class="form-select" name="orderBy" id="orderBy">
+                        <option value="" selected disabled>Select</option>
+                        <option value="desc">Newest</option>
+                        <option value="asc">Oldest</option>
+                    </select>
+                </div>
+
+                <table id="courses-table" class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Topic</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
         </div>
+    </div>
+@endsection
+@section('script')
+    <script>
 
+        $(document).ready(function () {
+            var selectedPrices ;
+            var selectedTopics ;
+            var minPrice;
+            var maxPrice;
+            var orderBy;
 
+            var course_data = $('#courses-table').DataTable({
+                processing: true,
+                serverSide: true,
+                searching: false,
+                ajax: {
+                    type: 'GET',
+                    url: '{!! route('courses.datatable') !!}',
+                    data (d) {
+                        d.price_range = selectedPrices;
+                        d.selected_topics = selectedTopics;
+                        d.min_price = minPrice;
+                        d.max_price = maxPrice;
+                        d.order_by = orderBy;
+                    }
+                },
+                columns: [
+                    { data: 'name', name: 'name' , orderable: false },
+                    { data: 'topic_name', name: 'topic_name' , orderable: false },
+                    { data: 'price_range', name: 'price_range' , orderable: false}
+                ]
+            });
+            
+            $('#orderBy').on('change', function()
+            {
+                orderBy= $(this).val();
+                course_data.ajax.reload();
+            });
+       
+            $('#apply_filter_btn').on('click', function (e) {
+                e.preventDefault();
+                selectedPrices = $('input[name="price_range[]"]:checked').map(function(){
+                    return this.value;
+                }).get();
 
+                selectedTopics = $('.topic-checkbox:checked').map(function(){
+                    return this.name;
+                }).get();
 
+                minPrice = $('#minPrice').val();
+                maxPrice = $('#maxPrice').val();
 
-
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-    </body>
-</html>
+                course_data.ajax.reload();
+            });
+        });
+    </script>
+ 
+@endsection
